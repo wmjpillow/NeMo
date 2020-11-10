@@ -20,6 +20,7 @@ from omegaconf import DictConfig
 from pytorch_lightning import Trainer
 from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning.overrides.data_parallel import LightningDistributedDataParallel
+from torch.nn import parameter
 from torch.nn.parallel import DistributedDataParallel
 
 from nemo.collections.nlp.modules import MegatronBertEncoder
@@ -75,7 +76,6 @@ class NLPModel(ModelPT):
 
         if app_state.model_parallel_size is not None:
             logging.info("Configuring DDP for model parallelism.")
-            logging.info(f"data_parallel_group: {app_state.data_parallel_group}")
             # with model parallelism, multiple GPUs form a large "logical GPU"
             # this means that data parallel groups span multiple GPUs
             # and are non-trivial
@@ -114,6 +114,13 @@ class NLPModel(ModelPT):
                     logging.info(f"restoring model parallel checkpoint: {self.bert_model._restore_path}")
                     # model parallel checkpoints need to be restored after torch.distributed is initialized
                     self.bert_model.restore_weights(self.bert_model._restore_path)
+
+                    logging.info(
+                        (
+                            f'Number of parameters on model parallel rank {app_state.model_parallel_rank}: '
+                            f'{sum([p.nelement() for p in self.bert_model.parameters()])}'
+                        )
+                    )
 
                     logging.info("replacing sampler with model parallel sampler")
                     mp_sampler = torch.utils.data.distributed.DistributedSampler(
