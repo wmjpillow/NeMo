@@ -100,6 +100,7 @@ class EncDecSpeakerLabelModel(ModelPT, Exportable):
         featurizer = WaveformFeaturizer(
             sample_rate=config['sample_rate'], int_values=config.get('int_values', False), augmentor=augmentor
         )
+
         self.dataset = AudioToSpeechLabelDataSet(
             manifest_filepath=config['manifest_filepath'],
             labels=config['labels'],
@@ -109,12 +110,22 @@ class EncDecSpeakerLabelModel(ModelPT, Exportable):
             trim=config.get('trim_silence', True),
             load_audio=config.get('load_audio', True),
             time_length=config.get('time_length', 8),
+            shift_length=config.get('shift_length',0.75)
         )
+        if 'diarization' in config and config['diarization']:
+            batch_size = 1
+            collate_func = self.dataset.sliced_seq_collate_fn  
+            self.task = 'diarization'
+        else:
+            batch_size = config['batch_size']
+            collate_func = self.dataset.fixed_seq_collate_fn
+            self.task = 'identification'
+
 
         return torch.utils.data.DataLoader(
             dataset=self.dataset,
-            batch_size=config['batch_size'],
-            collate_fn=self.dataset.fixed_seq_collate_fn,
+            batch_size=batch_size,
+            collate_fn=collate_func,
             drop_last=config.get('drop_last', False),
             shuffle=config['shuffle'],
             num_workers=config.get('num_workers', 2),
@@ -393,13 +404,17 @@ class ExtractSpeakerEmbeddingsModel(EncDecSpeakerLabelModel):
             for idx, line in enumerate(manifest.readlines()):
                 line = line.strip()
                 dic = json.loads(line)
-                structure = dic['audio_filepath'].split('/')[-3:]
-                uniq_name = '@'.join(structure)
-                if uniq_name in out_embeddings:
-                    raise KeyError("Embeddings for label {} already present in emb dictionary".format(uniq_name))
+                uniq_name = dic['audio_filepath'].split('/')[-1].split('.')[0]
+                # if uniq_name in out_embeddings:
+                    # raise KeyError("Embeddings for label {} already present in emb dictionary".format(uniq_name))
                 num_slices = slices[idx]
                 end_idx = start_idx + num_slices
-                out_embeddings[uniq_name] = embs[start_idx:end_idx].mean(axis=0)
+                if self.task == 'diarization':
+                    if uniq_name not in out_embeddings:
+                        out_embeddings[uniq_name] = []
+                    out_embeddings[uniq_name].extend(embs[start_idx:end_idx])
+                else:
+                    out_embeddings[uniq_name] = embs[start_idx:end_idx].mean(axis=0)
                 start_idx = end_idx
 
         embedding_dir = os.path.join(self.embedding_dir, 'embeddings')
