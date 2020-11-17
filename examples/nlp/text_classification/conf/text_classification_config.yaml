@@ -49,6 +49,7 @@ model:
   classifier_head:
     num_output_layers: 2
     fc_dropout: 0.1
+    activation: relu
 
   dataset:
     num_classes: ??? # The number of classes. 0 < Label <num_classes.
