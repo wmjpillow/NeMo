@@ -107,7 +107,7 @@ class EncDecSpeakerLabelModel(ModelPT, Exportable):
             featurizer=featurizer,
             max_duration=config.get('max_duration', None),
             min_duration=config.get('min_duration', None),
-            trim=config.get('trim_silence', True),
+            trim=config.get('trim_silence', False),
             load_audio=config.get('load_audio', True),
             time_length=config.get('time_length', 8),
             shift_length=config.get('shift_length',0.75)

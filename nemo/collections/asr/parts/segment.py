@@ -63,7 +63,7 @@ class AudioSegment(object):
         self._sample_rate = sample_rate
         if self._samples.ndim >= 2:
             self._samples = np.mean(self._samples, 1)
-
+        
         self._orig_sr = orig_sr if orig_sr is not None else sample_rate
 
     def __eq__(self, other):

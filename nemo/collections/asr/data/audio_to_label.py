@@ -177,7 +177,9 @@ target_label_n, "offset": offset_in_sec_n}
             if has_audio:
                 sig_len = sig_len.item()
                 dur = sig_len/self.featurizer.sample_rate
-                base = math.ceil((dur-self.time_length)/self.shift_length) 
+                base = math.ceil((dur-self.time_length)/self.shift_length)
+                print(dur)
+                import ipdb; ipdb.set_trace()
                 slice_length = int(slice_length)
                 shift = int(shift)
                 slices = 1 if base < 0 else base + 1 
