@@ -416,7 +416,7 @@ class ExtractSpeakerEmbeddingsModel(EncDecSpeakerLabelModel):
                 else:
                     out_embeddings[uniq_name] = embs[start_idx:end_idx].mean(axis=0)
                 start_idx = end_idx
-        import ipdb; ipdb.set_trace()
+        
         embedding_dir = os.path.join(self.embedding_dir, 'embeddings')
         if not os.path.exists(embedding_dir):
             os.mkdir(embedding_dir)
