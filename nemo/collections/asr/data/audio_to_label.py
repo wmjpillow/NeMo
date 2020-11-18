@@ -167,16 +167,19 @@ target_label_n, "offset": offset_in_sec_n}
                 encoded tokens, and encoded tokens length.  This collate func
                 assumes the signals are 1d torch tensors (i.e. mono audio).
         """
-        slice_length = int(self.featurizer.sample_rate * self.time_length)
+        slice_length = self.featurizer.sample_rate * self.time_length
         _, audio_lengths, _, tokens_lengths = zip(*batch)
-        shift = int( self.shift_length * self.featurizer.sample_rate)
+        shift = self.shift_length * self.featurizer.sample_rate
         has_audio = audio_lengths[0] is not None
 
         audio_signal, num_slices, tokens, audio_lengths = [], [], [], []
         for sig, sig_len, tokens_i, _ in batch:
             if has_audio:
                 sig_len = sig_len.item()
-                base = math.ceil((sig_len-slice_length)/shift) 
+                dur = sig_len/self.featurizer.sample_rate
+                base = math.ceil((dur-self.time_length)/self.shift_length) 
+                slice_length = int(slice_length)
+                shift = int(shift)
                 slices = 1 if base < 0 else base + 1 
                 for slice_id in range(slices):
                     start_idx = slice_id * shift
